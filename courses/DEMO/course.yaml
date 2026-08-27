@@ -1,0 +1,13 @@
+# Course-level parameters (layer 2). Relative paths resolve against this file's directory.
+course_code: DEMO
+course_name: "Cours de démonstration"
+dominant_language: fr        # fr | en — main language spoken in the recordings
+question_language: fr        # default language of the generated questions; a session may override
+course_prompt: ""            # optional standing instruction injected into every session's generation prompt
+context_files: []            # optional course-level context (syllabus, bibliography), paths relative to this file
+
+# Recorded now, used by later versions (reminders, guard-rails). Unused in v1.
+schedule:
+  dates: []
+  hours: []
+  session_length_min: 90

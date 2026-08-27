@@ -1,0 +1,67 @@
+# Nested repos (each has its own .git/) — none yet; add here as they appear.
+
+# Transient
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+node_modules/
+
+# Editor crud
+.DS_Store
+*.swp
+
+# ------------------------------------------------------------------------------
+# MEDIA BINARIES — video, audio, images (vault policy, 2026-07-23 FC).
+# Large, opaque to diff, and never a source format. Principle: track the
+# specification that produces the asset, not the asset. Mirrors the vault-root
+# .gitignore; replicated into every project repo by the repo-git-nested skill.
+#
+# NOTE: .gitignore governs only NEW files. Anything already tracked stays
+# tracked until explicitly `git rm --cached`-ed.
+# ------------------------------------------------------------------------------
+# Video
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+*.wmv
+*.m4v
+*.mpg
+*.mpeg
+*.flv
+*.3gp
+# Audio
+*.mp3
+*.wav
+*.aac
+*.flac
+*.m4a
+*.ogg
+*.opus
+*.wma
+*.aiff
+*.aif
+# Images
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.bmp
+*.tif
+*.tiff
+*.heic
+*.heif
+*.avif
+*.ico
+
+# ------------------------------------------------------------------------------
+# POWERPOINT (vault policy, FC 2026-07-24). Decks are not incremental documents:
+# every save rewrites the whole zip, so git stores a fresh opaque blob each time
+# and the history carries no usable diff. Mirrors the vault-root .gitignore.
+# Governs NEW files only; anything already tracked stays tracked.
+# ------------------------------------------------------------------------------
+*.pptx

@@ -1,0 +1,14 @@
+{
+  "name": "TSCT QCM",
+  "short_name": "TSCT QCM",
+  "description": "Recorded lecture → transcript → Moodle GIFT quiz, via Google Drive and Gemini.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f6f8",
+  "theme_color": "#1a3a5c",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

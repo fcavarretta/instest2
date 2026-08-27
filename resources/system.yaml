@@ -1,0 +1,48 @@
+# TSCT system-level parameters (layer 1 of the cascade: system -> course -> session).
+# Relative paths resolve against this file's directory.
+
+# "The strong one" (FC, 2026-08-25). The 2.5 generation is retired for new API
+# users (verified 2026-08-25: HTTP 404 "no longer available to new users"), so
+# we ride the stable alias; it currently resolves to gemini-3.1-pro-preview.
+# Pin the resolved name here instead if reproducibility ever matters more than
+# availability. The resolved model of each run is recorded in metadata.yaml.
+models:
+  transcription: gemini-pro-latest
+  generation: gemini-pro-latest
+
+# Extra questions generated beyond the session's target count (rounded up).
+reserve_percent: 20
+
+# Target question count. May be overridden per course or per session (lowest level wins).
+question_count: 10
+
+# thinking_level (low|high) is the Gemini 3 control; thinking_budget (token
+# count) is the 2.5-era control. Set at most one per call.
+transcription:
+  max_output_tokens: 65536
+  temperature: 0.3
+  thinking_level: low          # transcription is not a reasoning task
+
+generation:
+  max_output_tokens: 65536
+  temperature: 0.7
+  thinking_level: high
+
+output_root: null              # optional override folder; default = outputs beside the audio file
+
+prompts:
+  transcription: prompts/transcription.txt
+  generation: prompts/generation_system.txt
+
+gift:
+  category_header: true        # emit $CATEGORY line so imports land in their own Moodle category
+
+# $ per 1M tokens; the *_long tier applies when the prompt exceeds long_threshold_tokens.
+# gemini-pro-latest priced as its current resolution, gemini-3.1-pro-preview (checked 2026-08-25).
+pricing:
+  gemini-pro-latest:
+    input: 2.00
+    input_long: 4.00
+    output: 12.0
+    output_long: 18.0
+    long_threshold_tokens: 200000

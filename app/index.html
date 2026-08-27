@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1a3a5c">
+<title>TSCT QCM</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+  :root { --bg:#f5f6f8; --card:#fff; --ink:#1c2733; --muted:#5b6b7b; --accent:#1a5c9e; --ok:#1d7a3e; --bad:#b02a1e; --warn:#9a6b00; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--ink); }
+  header { display:flex; align-items:center; gap:.6rem; padding:.7rem 1rem; background:#1a3a5c; color:#fff; position:sticky; top:0; z-index:5; }
+  header h1 { font-size:1.05rem; margin:0; flex:1; font-weight:600; }
+  #canary { font-size:.8rem; padding:.15rem .55rem; border-radius:99px; background:#ffffff22; }
+  #canary.ok { background:#1d7a3e; } #canary.bad { background:#b02a1e; }
+  nav { display:flex; background:var(--card); border-bottom:1px solid #dde3ea; position:sticky; top:2.8rem; z-index:5; }
+  nav button { flex:1; padding:.65rem 0; border:0; background:none; font-size:.95rem; color:var(--muted); border-bottom:2.5px solid transparent; }
+  nav button.active { color:var(--accent); border-bottom-color:var(--accent); font-weight:600; }
+  main { padding:1rem; max-width:640px; margin:0 auto; }
+  .card { background:var(--card); border:1px solid #dde3ea; border-radius:.7rem; padding:1rem; margin-bottom:1rem; }
+  label { display:block; font-size:.82rem; color:var(--muted); margin:.7rem 0 .2rem; }
+  input, select, textarea { width:100%; padding:.55rem .6rem; font-size:.95rem; border:1px solid #c8d1db; border-radius:.45rem; background:#fff; color:var(--ink); }
+  textarea { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.85rem; min-height:55vh; white-space:pre; }
+  .row { display:flex; gap:.6rem; }
+  .row > * { flex:1; }
+  button.action { width:100%; padding:.85rem; margin-top:.8rem; font-size:1.05rem; font-weight:600; color:#fff; background:var(--accent); border:0; border-radius:.55rem; }
+  button.action:disabled { background:#9fb2c4; }
+  button.action.secondary { background:#48627e; }
+  button.small { padding:.45rem .8rem; font-size:.85rem; border:1px solid #c8d1db; background:#fff; border-radius:.45rem; color:var(--ink); }
+  #log { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.78rem; white-space:pre-wrap; word-break:break-word; background:#10151b; color:#cfe3f5; border-radius:.55rem; padding:.7rem; min-height:7rem; max-height:45vh; overflow:auto; }
+  #filelist { list-style:none; margin:0; padding:0; }
+  #filelist li { padding:.55rem .2rem; border-bottom:1px solid #eceff3; display:flex; justify-content:space-between; gap:.5rem; font-size:.92rem; }
+  #filelist li a { color:var(--accent); text-decoration:none; word-break:break-all; }
+  #filelist li span { color:var(--muted); font-size:.78rem; white-space:nowrap; }
+  .hint { font-size:.8rem; color:var(--muted); margin-top:.4rem; }
+  .banner { border-radius:.55rem; padding:.7rem .9rem; margin-bottom:1rem; font-size:.9rem; display:none; }
+  .banner.error { display:block; background:#fdecea; color:var(--bad); border:1px solid #f2b8b2; }
+  .banner.okay { display:block; background:#eaf7ee; color:var(--ok); border:1px solid #b9e2c5; }
+  .hidden { display:none !important; }
+</style>
+</head>
+<body>
+<header>
+  <img src="icon.svg" alt="" width="24" height="24">
+  <h1>TSCT QCM</h1>
+  <span id="canary" title="model canary">…</span>
+</header>
+<nav>
+  <button data-tab="run" class="active">Run</button>
+  <button data-tab="files">Files</button>
+  <button data-tab="settings">Settings</button>
+</nav>
+<main>
+  <div id="banner" class="banner"></div>
+
+  <section id="tab-run">
+    <div class="card">
+      <label>Course file</label>
+      <select id="courseSel"></select>
+      <label>Session file</label>
+      <select id="sessionSel"></select>
+      <label>Audio file (from the phone recorder, saved in Drive)</label>
+      <select id="audioSel"></select>
+      <div class="row" style="margin-top:.6rem">
+        <button class="small" id="refreshBtn">↻ Refresh listing</button>
+        <button class="small" id="dryBtn">Dry check</button>
+      </div>
+      <button class="action" id="transcribeBtn">🎙️ Transcribe</button>
+      <button class="action secondary" id="generateBtn">❓ Generate</button>
+    </div>
+    <div class="card">
+      <div id="log">Ready.</div>
+    </div>
+  </section>
+
+  <section id="tab-files" class="hidden">
+    <div class="card">
+      <div class="row">
+        <button class="small" id="filesRefreshBtn">↻ Refresh</button>
+      </div>
+      <ul id="filelist"></ul>
+    </div>
+    <div class="card hidden" id="editorCard">
+      <div class="row" style="align-items:center">
+        <strong id="editorName" style="word-break:break-all"></strong>
+        <button class="small" id="editorSaveBtn">💾 Save</button>
+        <button class="small" id="editorCloseBtn">✕ Close</button>
+      </div>
+      <textarea id="editorText" spellcheck="false"></textarea>
+    </div>
+  </section>
+
+  <section id="tab-settings" class="hidden">
+    <div class="card">
+      <p class="hint">One-time setup. See <a href="App%20tutorial.md" target="_blank">the app tutorial</a> for the OAuth client registration steps.</p>
+      <label>Google OAuth Client ID</label>
+      <input id="clientId" autocomplete="off" placeholder="…apps.googleusercontent.com">
+      <label>Gemini API key</label>
+      <input id="geminiKey" type="password" autocomplete="off" placeholder="AIza…">
+      <label>Active Drive directory (path from My Drive, e.g. _TSCT)</label>
+      <input id="dirPath" autocomplete="off" placeholder="_TSCT">
+      <button class="action" id="saveSettingsBtn">Save &amp; sign in</button>
+      <p class="hint" id="settingsStatus"></p>
+    </div>
+  </section>
+</main>
+<script src="vendor/js-yaml.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script type="module" src="ui.js"></script>
+</body>
+</html>
