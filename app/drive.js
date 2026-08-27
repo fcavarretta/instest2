@@ -16,13 +16,30 @@ export class DriveError extends Error {}
 let tokenClient = null;
 let accessToken = null;
 let tokenExpiry = 0;
+let pending = null; // {resolve, reject, timer} of the in-flight token request
+
+function settle(err, token) {
+  if (!pending) return;
+  clearTimeout(pending.timer);
+  const p = pending;
+  pending = null;
+  err ? p.reject(err) : p.resolve(token);
+}
 
 export function initAuth(clientId) {
   if (!window.google?.accounts?.oauth2) throw new DriveError("Google Identity Services not loaded — check the network and reload");
   tokenClient = window.google.accounts.oauth2.initTokenClient({
     client_id: clientId,
     scope: SCOPE,
-    callback: () => {}, // replaced per request
+    callback: (resp) => {
+      if (resp.error) return settle(new DriveError(`sign-in failed: ${resp.error}`));
+      accessToken = resp.access_token;
+      tokenExpiry = Date.now() + (resp.expires_in || 3600) * 1000;
+      settle(null, accessToken);
+    },
+    // Popup blocked/closed: without this the promise would hang forever and
+    // the UI's busy-guard would leave every button dead (found by smoke test).
+    error_callback: (err) => settle(new DriveError(`sign-in failed: ${err?.type || err?.message || "popup error"} — allow popups for this site and tap again`)),
   });
 }
 
@@ -31,13 +48,13 @@ export function initAuth(clientId) {
 export function getToken({ interactive = false } = {}) {
   if (accessToken && Date.now() < tokenExpiry - 60_000) return Promise.resolve(accessToken);
   if (!tokenClient) throw new DriveError("sign-in not initialized — set the OAuth Client ID in Settings");
+  if (pending) return Promise.reject(new DriveError("a sign-in is already in progress — finish it in the popup"));
   return new Promise((resolve, reject) => {
-    tokenClient.callback = (resp) => {
-      if (resp.error) return reject(new DriveError(`sign-in failed: ${resp.error}`));
-      accessToken = resp.access_token;
-      tokenExpiry = Date.now() + (resp.expires_in || 3600) * 1000;
-      resolve(accessToken);
-    };
+    const timer = setTimeout(
+      () => settle(new DriveError(interactive ? "sign-in timed out — popup blocked or closed? Allow popups and tap again" : "silent sign-in unavailable")),
+      interactive ? 120_000 : 15_000
+    );
+    pending = { resolve, reject, timer };
     tokenClient.requestAccessToken({ prompt: interactive ? "" : "none" });
   });
 }
