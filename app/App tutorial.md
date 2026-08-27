@@ -19,9 +19,9 @@ The app talks to *your* Drive, so Google requires an OAuth "client" registered u
 1. Open <https://console.cloud.google.com/> (sign in with the Google account whose Drive holds the course files).
 2. Pick a project to host the client — **reusing an existing project is fine** (e.g. the one AI Studio created for the Gemini key); the project is only a container for this one credential, nothing else. Only create a new one (`tsct-app`) if your existing project's OAuth consent screen is already **"In production"** for another app you operate — Testing mode (below) is project-wide and you don't want to fight over it.
 3. Menu ☰ → **APIs & Services → Library** → search **Google Drive API** → **Enable**.
-4. **APIs & Services → OAuth consent screen** (Google may brand this "Google Auth Platform"):
-   - App name `TSCT QCM`, your email as support and developer contact, audience **External** → save through the steps.
-   - **Audience → Test users → Add users**: add your own Gmail address. (The app stays in "testing" status forever — invisible in daily use, no verification process needed.)
+4. **APIs & Services → OAuth consent screen** (Google brands this "Google Auth Platform"):
+   - The setup wizard asks App name (`TSCT QCM`), your email as support/developer contact, then Contact Information → agree → **Create**. (On a personal Gmail account there is no Internal/External choice — External is the only option, so the wizard doesn't show it.)
+   - **After the wizard**: left sidebar → **Audience** page → Publishing status stays **Testing** (forever — invisible in daily use, no verification process) → **Test users → + Add users**: add your own Gmail address → Save.
 5. **APIs & Services → Credentials → Create credentials → OAuth client ID**:
    - Application type **Web application**, name `TSCT QCM web`.
    - **Authorized JavaScript origins**: add `https://fcavarretta.github.io`
