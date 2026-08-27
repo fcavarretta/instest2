@@ -17,7 +17,7 @@ The app replaces the Colab ritual. **Parametrize once (section A). Thereafter, c
 The app talks to *your* Drive, so Google requires an OAuth "client" registered under your account. This is app-manufacturing, not app-usage — done once, then forgotten.
 
 1. Open <https://console.cloud.google.com/> (sign in with the Google account whose Drive holds the course files).
-2. Top bar → project selector → **New project** → name it `tsct-app` → **Create**, and make sure it is the selected project.
+2. Pick a project to host the client — **reusing an existing project is fine** (e.g. the one AI Studio created for the Gemini key); the project is only a container for this one credential, nothing else. Only create a new one (`tsct-app`) if your existing project's OAuth consent screen is already **"In production"** for another app you operate — Testing mode (below) is project-wide and you don't want to fight over it.
 3. Menu ☰ → **APIs & Services → Library** → search **Google Drive API** → **Enable**.
 4. **APIs & Services → OAuth consent screen** (Google may brand this "Google Auth Platform"):
    - App name `TSCT QCM`, your email as support and developer contact, audience **External** → save through the steps.
