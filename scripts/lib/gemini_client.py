@@ -100,7 +100,11 @@ def prepare_audio(path: Path) -> Path:
     if size <= MAX_INLINE_SOURCE_BYTES:
         return path
 
-    cache = path.with_name(path.stem + COMPRESS_SUFFIX)
+    # Plumbing, not a teacher-facing file (FC, 2026-08-28): cache lives in
+    # system/ beside the audio. The app never creates these (Files API, no
+    # compression); this only serves CLI/Colab reruns.
+    cache = path.parent / "system" / (path.stem + COMPRESS_SUFFIX)
+    cache.parent.mkdir(exist_ok=True)
     if cache.exists() and cache.stat().st_mtime >= path.stat().st_mtime:
         print(f"🔊 {path.name} is {size / 1e6:.0f} MB — reusing compressed cache {cache.name}")
         return cache
