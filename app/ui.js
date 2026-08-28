@@ -62,15 +62,29 @@ $("clientId").value = settings.clientId || "";
 $("geminiKey").value = settings.geminiKey || "";
 $("dirPath").value = settings.dirPath || "";
 
+// A pasted secret may carry stray newlines/quotes/duplicates (seen 2026-08-26
+// in Colab: key pasted twice → invalid header). Keep the first non-empty line,
+// stripped — same rule as the Python io_layer._clean().
+function cleanSecret(value) {
+  for (const line of String(value || "").split(/[\r\n]+/)) {
+    const s = line.trim().replace(/^["']|["']$/g, "");
+    if (s) return s;
+  }
+  return "";
+}
+
+// Non-secret fingerprint so the loaded key is visually identifiable.
+const keyFingerprint = (k) => (k ? `${k.slice(0, 6)}…${k.slice(-4)} (${k.length} chars)` : "(none)");
+
 $("saveSettingsBtn").addEventListener("click", async () => {
   clearBanner();
-  settings.clientId = $("clientId").value.trim();
-  settings.geminiKey = $("geminiKey").value.trim();
+  settings.clientId = cleanSecret($("clientId").value);
+  settings.geminiKey = cleanSecret($("geminiKey").value);
   settings.dirPath = $("dirPath").value.trim().replace(/^\/+|\/+$/g, "");
   save();
   try {
     await connect({ interactive: true });
-    $("settingsStatus").textContent = `Connected ✓ — active directory: ${settings.dirPath}`;
+    $("settingsStatus").textContent = `Connected ✓ — active directory: ${settings.dirPath} · Gemini key ${keyFingerprint(settings.geminiKey)}`;
     banner("okay", "Settings saved and signed in. Go to Run.");
     if (settings.geminiKey) runCanary(); // pre-class assurance, same as at boot
   } catch (e) {
