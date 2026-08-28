@@ -103,6 +103,7 @@ async function connect({ interactive = false } = {}) {
   if (!meta) throw new Error(`Drive directory '${settings.dirPath}' not found under My Drive`);
   dirId = meta.id;
   await refreshListing();
+  clearBanner(); // a stale "sign in to Drive" hint must not outlive a successful connect
 }
 
 function gsiReady() {
