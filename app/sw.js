@@ -35,11 +35,14 @@ self.addEventListener("activate", (e) => {
 
 // App-shell requests: network first (so a deploy is picked up when online),
 // cache fallback (so the app opens with no network). API calls pass through.
+// cache:"no-cache" forces revalidation with the server — GitHub Pages sends a
+// 10-minute max-age, which otherwise lets plain F5 serve a stale shell from
+// the browser's HTTP cache after a deploy (seen 2026-08-28).
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   if (url.origin !== location.origin || e.request.method !== "GET") return;
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: "no-cache" })
       .then((r) => {
         const copy = r.clone();
         caches.open(VERSION).then((c) => c.put(e.request, copy));
