@@ -1,7 +1,7 @@
 ---
 title: TSCT app tutorial
 created: 2026-08-27
-modified: 2026-08-27
+modified: 2026-08-28   # install/build-stamp notes; troubleshooting from real field testing
 intent: one-time app setup and three-tap class use
 tags: [tsct, app, pwa, tutorial]
 ---
@@ -29,7 +29,7 @@ The app talks to *your* Drive, so Google requires an OAuth "client" registered u
 
 ### A.2 Fill the app's Settings (once per device/browser)
 
-1. Open the app: <https://fcavarretta.github.io/instest2/app/> — then browser menu → **Add to Home screen** to install it.
+1. Open the app: <https://fcavarretta.github.io/instest2/app/> — then browser menu ⋮ → **Add to Home screen** (recent Chrome labels it **Install app**). The home-screen icon opens the app standalone — no address bar, its own entry in the app switcher — and is the intended class launcher. Settings are **per device/browser**: each new device means re-entering the three values once (copy-paste the Client ID, never retype it).
 2. **Settings** tab:
    - **Google OAuth Client ID**: paste the ID from A.1.
    - **Gemini API key**: paste your key (same value as the Colab `GEMINI` secret).
@@ -42,7 +42,7 @@ That's it. The settings live on the device; nothing of yours passes through the 
 
 Prerequisite, unchanged from today: the phone's recorder app saved the lecture audio into the active Drive directory.
 
-1. Open the app. The 🩺 chip top-right is the pre-class canary: **OK** = both models answered a test call seconds ago.
+1. Open the app. The 🩺 chip top-right is the pre-class canary: **OK** = both models answered a test call seconds ago. The header also shows `build YYYY-MM-DD HH:MM UTC` — the deployed version you are running (it advances on every code push; a plain refresh fetches the newest).
 2. **Run** tab: the newest audio file is already selected (pickers remember your course/session choice; **↻ Refresh** re-reads the directory).
 3. Tap **🎙️ Transcribe**. Wait for `📄 Transcript: …` (the log shows progress and cost).
 4. Tap **❓ Generate**. Wait for `✅ N questions → ….questions.gift.md`.
@@ -57,10 +57,14 @@ Outputs land beside the audio in Drive, exactly like the CLI: `X.transcript.md`,
 
 The app ships default resources (system.yaml + the two prompt templates) from the repo. To override any of them: create a `resources/` folder **in the active Drive directory** and put there the element(s) to change, same names and layout (`system.yaml`, `prompts/transcription.txt`, `prompts/generation_system.txt`). Any element present there wins, element-wise; delete the file to fall back to the default. Editable from any device — including the app's own Files tab.
 
-## D. Troubleshooting
+## D. Troubleshooting (each entry below was earned in real testing, 2026-08-28)
 
 - **🩺 KO**: the named model is unavailable or the key is bad — fix before class; questions/transcription would fail the same way.
-- **Sign-in popup blocked**: tap the action button again (browsers require a user gesture the first time).
-- **"Drive directory not found"**: the Settings path is spelled from My Drive root, `/`-separated, no leading slash.
+- **`API_KEY_INVALID` (HTTP 400)**: the stored Gemini key is stale — typically after a key rotation, since Settings keep the old value per device. Re-paste the current key from <https://aistudio.google.com/apikey>; after **Save & sign in** the status line shows a non-secret fingerprint (first 6 + last 4 chars + length) to verify which key is loaded.
+- **`Error 401: invalid_client`** at sign-in: the OAuth **Client ID** on this device is mistyped/truncated (or the client *secret* was pasted — the app never uses the secret). Copy-paste the full ID ending `.apps.googleusercontent.com`.
+- **`Error 400: origin_mismatch`** at sign-in: the client's *Authorized JavaScript origins* must contain exactly `https://fcavarretta.github.io` — https, no trailing slash, no path. A just-edited origin can take minutes to propagate.
+- **`403 access_denied`** at sign-in: the chosen Google account is not in the consent screen's **Test users** list (add it on the Audience page). On a Workspace account (school), it can also be the organization's admin policy blocking third-party apps — ask IT to allow the Client ID.
+- **Sign-in popup blocked**: the app now says so explicitly — allow popups for the site and tap the action again (browsers require a user gesture the first time).
+- **"Drive directory not found"**: the Settings path is spelled from My Drive root, `/`-separated, no leading slash — in the Drive of the account you signed in with (My Drive only, not Shared drives).
 - **Truncation banner (⛔)**: Google flagged the output as cut (MAX_TOKENS). The partial is saved as `*.partial.*` for salvage; raise `max_output_tokens` (via a Drive `resources/system.yaml` override) and rerun.
 - **App update**: deploys are `git push`; the app picks the new version on the next open (it caches itself for offline starts, then checks the URL).
