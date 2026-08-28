@@ -112,12 +112,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             if audio.exists():
                 size = audio.stat().st_size
-                preflight = (
-                    "fits inline"
-                    if size <= gemini_client.MAX_INLINE_SOURCE_BYTES
-                    else "will be compressed (mono 32 kbps MP3)"
-                )
-                audio_line = f"{audio}  ({size / 1e6:.1f} MB — {preflight})"
+                audio_line = f"{audio}  ({size / 1e6:.1f} MB — uploaded via the Files API)"
             else:
                 audio_line = f"{audio}  (NOT FOUND — drop the file there before a real run)"
             outputs_line = runfolder.plan_outputs(audio, out_dir).describe()

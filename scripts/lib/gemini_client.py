@@ -1,12 +1,13 @@
 """Gemini REST client — stdlib only (urllib), per the vault precedent
 (image-generate skill / nano_banana.py) and FC's 2026-08-25 decision: no SDK.
 
-The inline-base64 route caps the request around 20 MB, i.e. ~14 MB of raw
-media before the 4/3 base64 overhead. The compression preflight keeps even a
-2-hour recording under that: transcode to mono 32 kbps MP3 (Gemini downmixes
-to 16 kHz mono internally, so nothing useful is lost), cached beside the
-source. If compression ever falls short, the upgrade path is the Files API
-(resumable upload) — confined to this module by design.
+Transport (PWA-fork decision, FC 2026-08-27, applied here 2026-08-28): audio
+is ALWAYS passed by reference via the Files API resumable upload — the inline
+route and its ffmpeg compression preflight are eliminated (one code path;
+production audio is ~2 h anyway). Inline base64 survives only for the small
+context files of the generation call, capped at MAX_INLINE_SOURCE_BYTES.
+The Colab version (sanctuarized instest repo) keeps the old compression
+pipeline until the switchover.
 
 The API key is passed in and never logged or included in error messages.
 """
@@ -15,8 +16,6 @@ from __future__ import annotations
 
 import base64
 import json
-import shutil
-import subprocess
 import sys
 import time
 import urllib.error
@@ -27,8 +26,7 @@ from .config import CallSettings, RunConfig
 from .costs import CallUsage
 
 API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
-MAX_INLINE_SOURCE_BYTES = 14 * 1024 * 1024
-COMPRESS_SUFFIX = "_c32k.mp3"
+MAX_INLINE_SOURCE_BYTES = 14 * 1024 * 1024  # cap for inline CONTEXT files only
 RETRY_STATUS = {429, 500, 502, 503, 504}
 RETRY_DELAYS = (5, 20, 60)
 TIMEOUT_SECONDS = 1800
@@ -89,42 +87,6 @@ def mime_for(path: Path) -> str:
     if not mime:
         raise ApiError(f"unsupported file type '{path.suffix}' for {path.name} (known: {sorted(MIME_TYPES)})")
     return mime
-
-
-def prepare_audio(path: Path) -> Path:
-    """Compression preflight: return the source if it fits inline, else a
-    cached mono-32kbps MP3 transcode (reused when newer than the source)."""
-    if not path.exists():
-        raise ApiError(f"audio file not found: {path}")
-    size = path.stat().st_size
-    if size <= MAX_INLINE_SOURCE_BYTES:
-        return path
-
-    # Plumbing, not a teacher-facing file (FC, 2026-08-28): cache lives in
-    # system/ beside the audio. The app never creates these (Files API, no
-    # compression); this only serves CLI/Colab reruns.
-    cache = path.parent / "system" / (path.stem + COMPRESS_SUFFIX)
-    cache.parent.mkdir(exist_ok=True)
-    if cache.exists() and cache.stat().st_mtime >= path.stat().st_mtime:
-        print(f"🔊 {path.name} is {size / 1e6:.0f} MB — reusing compressed cache {cache.name}")
-        return cache
-
-    if not shutil.which("ffmpeg"):
-        raise ApiError(
-            f"{path.name} is {size / 1e6:.0f} MB (> {MAX_INLINE_SOURCE_BYTES / 1e6:.0f} MB inline cap) "
-            "and ffmpeg is not available to compress it — install ffmpeg, or implement the Files API upgrade"
-        )
-    print(f"🔊 {path.name} is {size / 1e6:.0f} MB — compressing to mono 32 kbps MP3 (one-time, cached)")
-    result = subprocess.run(
-        ["ffmpeg", "-y", "-loglevel", "error", "-i", str(path), "-vn", "-ac", "1", "-b:a", "32k", str(cache)],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        raise ApiError(f"ffmpeg failed on {path.name}: {result.stderr.strip()[:500]}")
-    new_size = cache.stat().st_size
-    print(f"   → {cache.name}: {new_size / 1e6:.1f} MB")
-    return cache
 
 
 UPLOAD_URL = "https://generativelanguage.googleapis.com/upload/v1beta/files"
@@ -283,15 +245,13 @@ def call_model(
 
 
 def transcribe(cfg: RunConfig, prompt_text: str, api_key: str) -> tuple[str, CallUsage]:
-    audio = prepare_audio(cfg.audio_file)
-    size = audio.stat().st_size
-    if size <= MAX_INLINE_SOURCE_BYTES:
-        first: dict = _inline_part(audio)
-    else:
-        print(f"📤 {audio.name} ({size / 1e6:.0f} MB) exceeds the inline cap — uploading via the Files API…")
-        info = upload_file(audio, api_key)
-        print(f"   uploaded ✓ (Google keeps it 48 h)")
-        first = {"file_data": {"mime_type": mime_for(audio), "file_uri": info["uri"]}}
+    audio = cfg.audio_file
+    if not audio.exists():
+        raise ApiError(f"audio file not found: {audio}")
+    print(f"📤 uploading {audio.name} ({audio.stat().st_size / 1e6:.1f} MB) via the Files API…")
+    info = upload_file(audio, api_key)
+    print(f"   uploaded ✓ (Google keeps it 48 h)")
+    first = {"file_data": {"mime_type": mime_for(audio), "file_uri": info["uri"]}}
     parts = [first, {"text": prompt_text}]
     return call_model(cfg.model_transcription, parts, cfg.transcription, api_key, call_name="transcription")
 
