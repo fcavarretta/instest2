@@ -71,6 +71,7 @@ $("saveSettingsBtn").addEventListener("click", async () => {
     await connect({ interactive: true });
     $("settingsStatus").textContent = `Connected ✓ — active directory: ${settings.dirPath}`;
     banner("okay", "Settings saved and signed in. Go to Run.");
+    if (settings.geminiKey) runCanary(); // pre-class assurance, same as at boot
   } catch (e) {
     $("settingsStatus").textContent = "";
     banner("error", e.message);
