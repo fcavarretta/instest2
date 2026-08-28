@@ -39,6 +39,7 @@
   .banner.error { display:block; background:#fdecea; color:var(--bad); border:1px solid #f2b8b2; }
   .banner.okay { display:block; background:#eaf7ee; color:var(--ok); border:1px solid #b9e2c5; }
   .hidden { display:none !important; }
+  #buildstamp { position:fixed; bottom:.3rem; right:.5rem; font-size:.62rem; color:var(--muted); opacity:.7; pointer-events:none; z-index:9; }
 </style>
 </head>
 <body>
@@ -106,6 +107,7 @@
     </div>
   </section>
 </main>
+<div id="buildstamp"></div>
 <script src="vendor/js-yaml.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script type="module" src="ui.js"></script>

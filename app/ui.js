@@ -2,6 +2,7 @@
 // parametrize once; thereafter open the app → point at the recorded file →
 // Transcribe → Generate. Nothing else, ever.
 
+import { BUILD } from "./build.js";
 import * as drive from "./drive.js";
 import * as gemini from "./core/gemini.js";
 import { parseYamlMapping } from "./core/config.js";
@@ -273,6 +274,7 @@ $("editorSaveBtn").addEventListener("click", async () => {
 });
 
 // ---- boot ----------------------------------------------------------------
+$("buildstamp").textContent = `build ${BUILD}`;
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 
 (async () => {

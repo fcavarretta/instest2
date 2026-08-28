@@ -2,11 +2,12 @@
 // the URL is only checked for updates (spec §1: the PWA is the larva, the APK
 // is the product). Bump VERSION on every deploy that changes app files —
 // clients pick the new shell up on the next open after that.
-const VERSION = "tsct-app-v1";
+const VERSION = "tsct-app-v2";
 const SHELL = [
   "./",
   "./index.html",
   "./ui.js",
+  "./build.js",
   "./drive.js",
   "./pipeline.js",
   "./core/config.js",
