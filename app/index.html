@@ -13,6 +13,7 @@
   body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--ink); }
   header { display:flex; align-items:center; gap:.6rem; padding:.7rem 1rem; background:#1a3a5c; color:#fff; position:sticky; top:0; z-index:5; }
   header h1 { font-size:1.05rem; margin:0; flex:1; font-weight:600; }
+  #buildstamp { font-size:.72rem; font-weight:400; color:#a9c6e2; margin-left:.5rem; }
   #canary { font-size:.8rem; padding:.15rem .55rem; border-radius:99px; background:#ffffff22; }
   #canary.ok { background:#1d7a3e; } #canary.bad { background:#b02a1e; }
   nav { display:flex; background:var(--card); border-bottom:1px solid #dde3ea; position:sticky; top:2.8rem; z-index:5; }
@@ -39,13 +40,12 @@
   .banner.error { display:block; background:#fdecea; color:var(--bad); border:1px solid #f2b8b2; }
   .banner.okay { display:block; background:#eaf7ee; color:var(--ok); border:1px solid #b9e2c5; }
   .hidden { display:none !important; }
-  #buildstamp { position:fixed; bottom:.3rem; right:.5rem; font-size:.62rem; color:var(--muted); opacity:.7; pointer-events:none; z-index:9; }
 </style>
 </head>
 <body>
 <header>
   <img src="icon.svg" alt="" width="24" height="24">
-  <h1>TSCT QCM</h1>
+  <h1>TSCT QCM<span id="buildstamp"></span></h1>
   <span id="canary" title="model canary">…</span>
 </header>
 <nav>
@@ -107,7 +107,6 @@
     </div>
   </section>
 </main>
-<div id="buildstamp"></div>
 <script src="vendor/js-yaml.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script type="module" src="ui.js"></script>
