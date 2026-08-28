@@ -1,7 +1,7 @@
 {
   "name": "TSCT QCM",
   "short_name": "TSCT QCM",
-  "description": "Recorded lecture → transcript → Moodle GIFT quiz, via Google Drive and Gemini.",
+  "description": "TSCT QCM",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

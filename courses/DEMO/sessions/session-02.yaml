@@ -1,7 +1,0 @@
-# Session-level parameters (layer 3). Relative paths resolve against this file's directory.
-session_id: 2
-session_date: 2026-09-01
-session_prompt: "À préciser avant la séance : focus et exclusions en deux lignes."
-# question_language: en     # uncomment to override the course default for this session
-# audio_file: ...           # optional — omit when the notebook passes --audio (Colab flow)
-context_files: []            # optional: files and/or folders; appended to course-level context
