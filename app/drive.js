@@ -13,6 +13,19 @@ export const FOLDER_MIME = "application/vnd.google-apps.folder";
 
 export class DriveError extends Error {}
 
+// A Google Doc/Sheet/Slides file is not a file: Drive refuses to serve its
+// bytes (HTTP 403 "Only files with binary content can be downloaded"). Such a
+// twin appears silently when a yaml is opened with Google Docs on the phone
+// (FC, 2026-09-24) — same name, blue icon, and the app must never bind to it.
+const GOOGLE_NATIVE_PREFIX = "application/vnd.google-apps.";
+export function isGoogleNative(f) {
+  return typeof f?.mimeType === "string" && f.mimeType.startsWith(GOOGLE_NATIVE_PREFIX) && f.mimeType !== FOLDER_MIME;
+}
+export function nativeHint(f) {
+  const kind = f.mimeType.slice(GOOGLE_NATIVE_PREFIX.length);
+  return `'${f.name}' is a Google ${kind} (blue Docs-style icon in Drive), not a plain file — the app cannot read it. Delete or rename that copy; if you edited it there, paste its text into the real file with the app's Files editor.`;
+}
+
 let tokenClient = null;
 let accessToken = null;
 let tokenExpiry = 0;
@@ -73,7 +86,13 @@ async function call(path, { method = "GET", query = {}, body = null, headers = {
     accessToken = null; // expired mid-session: one silent retry
     return call(path, { method, query, body, headers, upload, raw });
   }
-  if (!r.ok) throw new DriveError(`Drive ${method} ${path}: HTTP ${r.status} — ${(await r.text()).slice(0, 300)}`);
+  if (!r.ok) {
+    const text = await r.text();
+    if (r.status === 403 && text.includes("binary content")) {
+      throw new DriveError(`Drive refused to download a Google Doc/Sheet: the selected file is a Google-native document, not a plain file — delete or rename that copy in Drive, keep the real .yaml/.m4a, then Refresh (${path})`);
+    }
+    throw new DriveError(`Drive ${method} ${path}: HTTP ${r.status} — ${text.slice(0, 300)}`);
+  }
   return raw ? r : r.json();
 }
 
@@ -104,7 +123,10 @@ export async function findChild(folderId, name, { folder = false } = {}) {
   const data = await call("/files", {
     query: { q: `'${folderId}' in parents and name='${escaped}' and trashed=false${typeQ}`, fields: `files(${FIELDS})` },
   });
-  return (data.files || [])[0] || null;
+  // Prefer a plain file over a Google-native twin of the same name; the twin
+  // is returned only when it is the sole match, so the error can name it.
+  const files = data.files || [];
+  return files.find((f) => !isGoogleNative(f)) || files[0] || null;
 }
 
 export async function ensureFolder(parentId, name) {
@@ -131,13 +153,21 @@ export async function resolvePath(rootId, path) {
   return node;
 }
 
-export async function downloadText(fileId) {
-  const r = await call(`/files/${fileId}`, { query: { alt: "media" }, raw: true });
+// Both accept a file meta (preferred: the Google-native check runs before any
+// network call and names the file) or a bare id.
+function downloadId(file) {
+  if (typeof file === "string") return file;
+  if (isGoogleNative(file)) throw new DriveError(nativeHint(file));
+  return file.id;
+}
+
+export async function downloadText(file) {
+  const r = await call(`/files/${downloadId(file)}`, { query: { alt: "media" }, raw: true });
   return r.text();
 }
 
-export async function downloadBytes(fileId) {
-  const r = await call(`/files/${fileId}`, { query: { alt: "media" }, raw: true });
+export async function downloadBytes(file) {
+  const r = await call(`/files/${downloadId(file)}`, { query: { alt: "media" }, raw: true });
   return new Uint8Array(await r.arrayBuffer());
 }
 

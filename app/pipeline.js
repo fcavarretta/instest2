@@ -40,7 +40,7 @@ export async function loadResources(dirId, log = () => {}) {
     for (const element of RESOURCE_ELEMENTS) {
       const meta = await drive.resolvePath(overrideFolder.id, element);
       if (meta && meta.mimeType !== drive.FOLDER_MIME) {
-        texts[element] = await drive.downloadText(meta.id);
+        texts[element] = await drive.downloadText(meta);
         origins[element] = "Drive override";
         log(`🗂 resources/${element}: Drive override active`);
       }
@@ -65,8 +65,8 @@ export async function buildConfig({ dirId, courseMeta, sessionMeta, resources, w
   const cfg = loadConfig({
     texts: {
       system: resources.texts["system.yaml"],
-      course: await drive.downloadText(courseMeta.id),
-      session: await drive.downloadText(sessionMeta.id),
+      course: await drive.downloadText(courseMeta),
+      session: await drive.downloadText(sessionMeta),
     },
     paths: { system: "system.yaml", course: courseMeta.name, session: sessionMeta.name },
     bases: { course: courseMeta.parents?.[0] || dirId, session: sessionMeta.parents?.[0] || dirId },
@@ -157,7 +157,7 @@ export async function runTranscribe({ dirId, cfg, audioMeta, apiKey, log }) {
   warnings.forEach(log);
 
   log(`⬇️ downloading ${audioMeta.name} from Drive (${(Number(audioMeta.size) / 1e6).toFixed(1)} MB)…`);
-  const bytes = await drive.downloadBytes(audioMeta.id);
+  const bytes = await drive.downloadBytes(audioMeta);
   log(`📤 uploading to Gemini (Files API — Google keeps it 48 h)…`);
   const info = await gemini.uploadFile(audioMeta.name, bytes, apiKey, log);
   log(`   uploaded ✓`);
@@ -209,7 +209,7 @@ export async function runGenerate({ dirId, cfg, audioMeta, apiKey, log }) {
     const others = (await drive.listChildren(outDirId)).map((f) => f.name).filter((n) => n.endsWith(".transcript.md"));
     throw new gemini.ApiError(`${transcriptName} not found (transcripts present: ${others.join(", ") || "none"}) — run Transcribe first, or rename/move the right transcript beside the audio`);
   }
-  const transcript = stripFrontMatter(await drive.downloadText(transcriptMeta.id));
+  const transcript = stripFrontMatter(await drive.downloadText(transcriptMeta));
   log(`📄 Reusing transcript: ${transcriptName} (${transcript.split(/\s+/).length} words)`);
 
   const generationVars = {
@@ -229,7 +229,7 @@ export async function runGenerate({ dirId, cfg, audioMeta, apiKey, log }) {
   for (const c of contexts) {
     total += Number(c.size || 0);
     log(`📎 context: ${c.name}`);
-    parts.push(gemini.inlinePart(c.name, await drive.downloadBytes(c.id)));
+    parts.push(gemini.inlinePart(c.name, await drive.downloadBytes(c)));
   }
   if (total > gemini.MAX_INLINE_SOURCE_BYTES) throw new gemini.ApiError(`context files total ${(total / 1e6).toFixed(0)} MB > inline cap — trim or compress them`);
   parts.push({ text: prompt });

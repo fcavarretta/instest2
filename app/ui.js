@@ -119,7 +119,13 @@ function gsiReady() {
 
 // ---- listing & pickers ---------------------------------------------------
 async function refreshListing() {
-  listing = await drive.listChildren(dirId);
+  const all = await drive.listChildren(dirId);
+  // Google-native twins (a yaml opened with Google Docs on the phone) never
+  // reach the pickers; one warning per twin that looks like an app file.
+  listing = all.filter((f) => !drive.isGoogleNative(f));
+  for (const f of all.filter(drive.isGoogleNative)) {
+    if (/\.ya?ml$/i.test(f.name) || AUDIO_EXT.some((e) => f.name.toLowerCase().endsWith(e))) log(`⚠️ ignored: ${drive.nativeHint(f)}`);
+  }
   const yamls = listing.filter((f) => /\.ya?ml$/i.test(f.name) && f.mimeType !== drive.FOLDER_MIME);
   const audios = listing.filter((f) => AUDIO_EXT.some((e) => f.name.toLowerCase().endsWith(e)));
   fillSelect($("courseSel"), yamls, settings.courseName || "course.yaml");
@@ -255,11 +261,14 @@ async function refreshFiles() {
   ];
   for (const { f, prefix } of rows) {
     const li = document.createElement("li");
-    const editable = TEXT_EXT.some((e) => f.name.toLowerCase().endsWith(e));
+    const native = drive.isGoogleNative(f);
+    const editable = !native && TEXT_EXT.some((e) => f.name.toLowerCase().endsWith(e));
     const label = prefix + f.name;
     li.innerHTML = editable
       ? `<a href="#" data-id="${f.id}" data-name="${label}">${label}</a><span>${(f.modifiedTime || "").slice(0, 16).replace("T", " ")}</span>`
-      : `<em>${label}</em><span>${(Number(f.size) / 1e6).toFixed(1)} MB</span>`;
+      : native
+        ? `<em>${label}</em><span>Google ${f.mimeType.split(".").pop()} — not readable by the app</span>`
+        : `<em>${label}</em><span>${(Number(f.size) / 1e6).toFixed(1)} MB</span>`;
     ul.appendChild(li);
   }
   ul.querySelectorAll("a").forEach((a) =>
